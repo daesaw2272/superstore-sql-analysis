@@ -1,0 +1,295 @@
+from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+ROOT = Path(__file__).resolve().parents[1]
+EXPORTS = ROOT / "exports"
+CHARTS = ROOT / "charts"
+
+
+def require_file(path: Path) -> None:
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Missing file: {path}\n"
+            f"Make sure you exported your query results to CSV into the 'exports/' folder."
+        )
+
+
+def save_bar(x, y, title: str, xlabel: str, ylabel: str, out_path: Path) -> None:
+    plt.figure()
+    plt.bar(x, y)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(rotation=30, ha="right")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def save_line(x, y, title: str, xlabel: str, ylabel: str, out_path: Path) -> None:
+    plt.figure()
+    plt.plot(x, y)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def main() -> int:
+    CHARTS.mkdir(parents=True, exist_ok=True)
+
+    # Profit by Region (bar chart)
+    region_csv = EXPORTS / "region_performance.csv"
+    require_file(region_csv)
+    region = pd.read_csv(region_csv)
+
+    # Expect columns: region, sales, profit
+    needed = {"region", "profit"}
+    if not needed.issubset(region.columns.str.lower()):
+        # Normalize columns in case they come as Region/Profit etc.
+        region.columns = [c.strip().lower() for c in region.columns]
+
+    region = region.sort_values("profit", ascending=False)
+    save_bar(
+        x=region["region"],
+        y=region["profit"],
+        title="Profit by Region",
+        xlabel="Region",
+        ylabel="Profit",
+        out_path=CHARTS / "profit_by_region.png",
+    )
+
+    # Monthly Sales Trend (line chart)
+    monthly_csv = EXPORTS / "monthly_trend.csv"
+    require_file(monthly_csv)
+    monthly = pd.read_csv(monthly_csv)
+    monthly.columns = [c.strip().lower() for c in monthly.columns]
+
+    monthly["month"] = pd.to_datetime(monthly["month"], errors="coerce")
+    monthly = monthly.dropna(subset=["month"]).sort_values("month")
+
+    save_line(
+        x=monthly["month"],
+        y=monthly["sales"],
+        title="Monthly Sales Trend",
+        xlabel="Month",
+        ylabel="Sales",
+        out_path=CHARTS / "monthly_sales_trend.png",
+    )
+
+    save_line(
+        x=monthly["month"],
+        y=monthly["profit"],
+        title="Monthly Profit Trend",
+        xlabel="Month",
+        ylabel="Profit",
+        out_path=CHARTS / "monthly_profit_trend.png",
+    )
+
+    # Biggest Loss-Making Sub-Categories (bar chart)
+    subcat_csv = EXPORTS / "subcategory_profit.csv"
+    require_file(subcat_csv)
+    subcat = pd.read_csv(subcat_csv)
+    subcat.columns = [c.strip().lower() for c in subcat.columns]
+
+    subcat["label"] = subcat["category"].astype(str) + " - " + subcat["sub_category"].astype(str)
+
+    # Take bottom 10 profits
+    worst = subcat.sort_values("profit", ascending=True).head(10)
+
+    save_bar(
+        x=worst["label"],
+        y=worst["profit"],
+        title="Bottom 10 Sub-Categories by Profit",
+        xlabel="Sub-Category",
+        ylabel="Profit",
+        out_path=CHARTS / "bottom_10_subcategories_profit.png",
+    )
+
+    # Top Customers by Profit (bar chart)
+    cust_csv = EXPORTS / "top_customers_profit.csv"
+    require_file(cust_csv)
+    customers = pd.read_csv(cust_csv)
+    customers.columns = [c.strip().lower() for c in customers.columns]
+
+    customers = customers.sort_values("total_profit", ascending=False)
+
+    save_bar(
+        x=customers["customer_name"],
+        y=customers["total_profit"],
+        title="Top 10 Customers by Profit",
+        xlabel="Customer",
+        ylabel="Total Profit",
+        out_path=CHARTS / "top_customers_by_profit.png",
+    )
+
+    print("✅ Charts saved to:", CHARTS)
+    for p in sorted(CHARTS.glob("*.png")):
+        print(" -", p.relative_to(ROOT))
+
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as e:
+        print("❌ Error:", e)
+        return_code = 1
+        raise SystemExit(return_code)from __future__ import annotations
+
+from pathlib import Path
+import sys
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+ROOT = Path(__file__).resolve().parents[1]
+EXPORTS = ROOT / "exports"
+CHARTS = ROOT / "charts"
+
+
+def require_file(path: Path) -> None:
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Missing file: {path}\n"
+            f"Make sure you exported your query results to CSV into the 'exports/' folder."
+        )
+
+
+def save_bar(x, y, title: str, xlabel: str, ylabel: str, out_path: Path) -> None:
+    plt.figure()
+    plt.bar(x, y)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.xticks(rotation=30, ha="right")
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def save_line(x, y, title: str, xlabel: str, ylabel: str, out_path: Path) -> None:
+    plt.figure()
+    plt.plot(x, y)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=200)
+    plt.close()
+
+
+def main() -> int:
+    CHARTS.mkdir(parents=True, exist_ok=True)
+
+    # Profit by Region (bar chart)
+    region_csv = EXPORTS / "region_performance.csv"
+    require_file(region_csv)
+    region = pd.read_csv(region_csv)
+
+    needed = {"region", "profit"}
+    if not needed.issubset(region.columns.str.lower()):
+        # Normalize columns in case they come as Region/Profit etc.
+        region.columns = [c.strip().lower() for c in region.columns]
+
+    region = region.sort_values("profit", ascending=False)
+    save_bar(
+        x=region["region"],
+        y=region["profit"],
+        title="Profit by Region",
+        xlabel="Region",
+        ylabel="Profit",
+        out_path=CHARTS / "profit_by_region.png",
+    )
+
+    # <onthly Sales Trend (line chart)
+    monthly_csv = EXPORTS / "monthly_trend.csv"
+    require_file(monthly_csv)
+    monthly = pd.read_csv(monthly_csv)
+    monthly.columns = [c.strip().lower() for c in monthly.columns]
+
+    monthly["month"] = pd.to_datetime(monthly["month"], errors="coerce")
+    monthly = monthly.dropna(subset=["month"]).sort_values("month")
+
+    save_line(
+        x=monthly["month"],
+        y=monthly["sales"],
+        title="Monthly Sales Trend",
+        xlabel="Month",
+        ylabel="Sales",
+        out_path=CHARTS / "monthly_sales_trend.png",
+    )
+
+    save_line(
+        x=monthly["month"],
+        y=monthly["profit"],
+        title="Monthly Profit Trend",
+        xlabel="Month",
+        ylabel="Profit",
+        out_path=CHARTS / "monthly_profit_trend.png",
+    )
+
+    # Biggest Loss-Making Sub-Categories (bar chart)
+    subcat_csv = EXPORTS / "subcategory_profit.csv"
+    require_file(subcat_csv)
+    subcat = pd.read_csv(subcat_csv)
+    subcat.columns = [c.strip().lower() for c in subcat.columns]
+
+    # Expect columns: category, sub_category, sales, profit
+    # Build a label like "Furniture - Tables"
+    subcat["label"] = subcat["category"].astype(str) + " - " + subcat["sub_category"].astype(str)
+
+    # Take bottom 10 profits
+    worst = subcat.sort_values("profit", ascending=True).head(10)
+
+    save_bar(
+        x=worst["label"],
+        y=worst["profit"],
+        title="Bottom 10 Sub-Categories by Profit",
+        xlabel="Sub-Category",
+        ylabel="Profit",
+        out_path=CHARTS / "bottom_10_subcategories_profit.png",
+    )
+
+    # Top Customers by Profit (bar chart)
+    cust_csv = EXPORTS / "top_customers_profit.csv"
+    require_file(cust_csv)
+    customers = pd.read_csv(cust_csv)
+    customers.columns = [c.strip().lower() for c in customers.columns]
+
+    # Expect columns: customer_name, total_profit, total_sales
+    customers = customers.sort_values("total_profit", ascending=False)
+
+    save_bar(
+        x=customers["customer_name"],
+        y=customers["total_profit"],
+        title="Top 10 Customers by Profit",
+        xlabel="Customer",
+        ylabel="Total Profit",
+        out_path=CHARTS / "top_customers_by_profit.png",
+    )
+
+    print("✅ Charts saved to:", CHARTS)
+    for p in sorted(CHARTS.glob("*.png")):
+        print(" -", p.relative_to(ROOT))
+
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as e:
+        print("❌ Error:", e)
+        return_code = 1
+        raise SystemExit(return_code)
